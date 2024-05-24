@@ -56,7 +56,6 @@ void* Pool::ThreadFunc(void *threadData)
         if (pTask!=nullptr)
         {
             pTask->Run();
-            pTask->isFinished = true;
         }
 
         if (PoolData->pDestroyAll && PoolData->pTaskList.empty())
@@ -144,7 +143,6 @@ public:
         data[start_index] = temp;   //以基准作为分界线
         //return start_index;
     }
-
 };
 
 // Structure to hold data

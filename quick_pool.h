@@ -16,12 +16,12 @@ private:
 protected:
     //pData代表Task内部受操作的Data.在本例中是切割后的待排序defined struct块
     void* pData;
+    Pool* pParentPool;
     uint64_t end_index,start_index;
     //内联函数,调用时直接展开为定义内容(即"isFinished=false这两句")
     inline void initTask()
     {
-        //初始化(Task完成标志和pData)
-        isFinished = false;
+        //(初始化pData)
         pData = nullptr;
     }
 
@@ -42,25 +42,13 @@ public:
         end_index=end;
         start_index=start;
     }
-    //内联函数,提供阻塞线程的方法
-    inline int waitTask()
+
+    inline void setResult(void* result,Pool& pool)
     {
-        if (!isFinished)
-        {
-            while (!isFinished)
-            {
-                //挂起当前进程,在当前示例中可以代表进程任务已经完成.
-                //显然,挂起当前进程可以节约抢占锁的时间.
-                //当前场景中,所需线程数无疑是线性减小的,所以可以直接阻塞到整个任务都完成为止.
-                //所有任务都完成后,唤醒并销毁所有线程(这会带来额外的开销吗?)
-                //在较为通用的场景中,
-                //最适线程数往往是非线性波动的,
-                //如果我们还需要自动唤醒进程,
-                //可以考虑使用较低秒数的 usleep / nanosleep 来精确控制到毫秒或纳秒
-                sleep(5);
-            }
-        }
-        return 0;
+        //*********************************setResult*****************************
+        pthread_mutex_lock(pool.pTaskResultMutex);
+        pool.pTaskResultList.push_back(result);
+        pthread_mutex_unlock(pool.pTaskResultMutex);
     }
 };
 
@@ -80,6 +68,8 @@ public:
     list<Task*> pTaskList;
     //用于同步的互斥锁
     pthread_mutex_t pMutex;
+    //*********************************TaskResult SET Mutex*************************
+    pthread_mutex_t pTaskResultMutex;
     // 条件变量.通过条件变量来避免每个线程对临界区变量的轮询.
     // 详见ThreadFunc成员函数
     pthread_cond_t pCond;
@@ -88,6 +78,8 @@ public:
     bool pDestroyAll;
     // 线程ID数组
     vector<pthread_t> pTid;
+    //*********************************TaskResultList*********************************
+    vector<int> pTaskResultList;
 
 protected:
     // 销毁所有线程
@@ -100,5 +92,4 @@ public:
     Pool(int threadNum);
     virtual ~Pool();
     void AddTask(Task* t);
-    int GetTaskSize();
 };
