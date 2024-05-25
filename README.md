@@ -1,6 +1,6 @@
-# parallel experiment code （2024-Spring）
-### [Teacher:weiguo Liu, RA:]
-### [Team: kai chen, runpei miao, huiwu chen]
+# Parallel Experiment （2024-Spring）
+### [Teacher:weiguo Liu & zekun Yin, RA:lifeng Yan]
+### [Team: kai Chen, runpei Miao, huiwu Chen]
 
 
 ##### 【线程生命周期优化】

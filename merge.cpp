@@ -7,24 +7,10 @@
 #include <cstdlib>
 using namespace std;
 
-//初始化threadNum个线程数的Pool.
-Pool::Pool(int threadNum)
-{
-    pDestroyAll = false;
-    CreateAll(threadNum);
-}
-
-Pool::~Pool()
-{
-    //printf("Delete Pool\n");
-    DestroyAll();
-}
-
 //线程所运行的函数.每个线程均应该执行ThreadFunc函数.
 void* Pool::ThreadFunc(void *threadData)
 {
     if ( threadData == nullptr ) {
-        //printf("Thread data is null.");
         return NULL;
     }
     //将'threadData'指针铸造为Pool指针'PoolData',以便使用Pool中的方法
@@ -63,61 +49,6 @@ void* Pool::ThreadFunc(void *threadData)
         }
     }
     return NULL;
-}
-
-
-void Pool::CreateAll(int num)
-{
-    //初始化互斥锁pMutex和条件变量pCond,重置pTid <vector>数组大小
-    pthread_mutex_init(&pMutex,NULL);
-    pthread_cond_init(&pCond,NULL);
-    pTid.resize(num);
-    //使用pthread_create方法创建pthread线程
-    for (int i=0;i<num;++i)
-    {
-        pthread_create(&pTid[i],NULL,ThreadFunc,(void *)this);
-        printf("%d start",i);
-    }
-}
-
-//向Pool中添加任务.
-void Pool::AddTask(Task* task)
-{
-    //显然,AddTask和threadFunc之间有读写者问题,适用生产者-消费者(P-C)模型
-    //添加任务时需要先给mutex上锁.保护临界区
-    pthread_mutex_lock(&pMutex);
-    //加入任务.
-    pTaskList.push_back(task);
-    //wait&signal机制.
-    pthread_cond_signal(&pCond);
-    //释放锁.
-    pthread_mutex_unlock(&pMutex);
-    //<?1>:这里unlock和signal的顺序可以颠倒吗?
-}
-
-
-void Pool::DestroyAll()
-{
-    if (!pDestroyAll)
-    {
-        //设置线程销毁标志,由销毁标志触发pthread_exit,退出线程
-        pDestroyAll = true;
-        printf("start to destroy");
-
-        //唤醒所有线程,此时由于触发pDestroy=true条件的判断会依次自动销毁.
-        pthread_cond_broadcast(&pCond);
-
-        //清除cond,mutex,pTid
-        for ( int i = 0;i<pTid.size();++i)
-        {
-            //pthread_join是以阻塞的方式等待指定线程结束.
-            pthread_join(pTid[i],NULL);
-            printf("Destroy thread %d",i);
-        }
-        pTid.clear();
-        pthread_cond_destroy(&pCond);
-        pthread_mutex_destroy(&pMutex);
-    }
 }
 
 
@@ -278,7 +209,7 @@ int main(int argc, char *argv[]){
         }
     }
    
-    // //激活析构
+    // 激活析构
     // delete pool;
     // delete []pTaskList;
 
@@ -297,6 +228,3 @@ int main(int argc, char *argv[]){
 
     return 1;
 }
-
-
-// get end clock
