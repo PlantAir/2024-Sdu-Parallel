@@ -38,7 +38,6 @@ void* Pool::ThreadFunc(void *threadData)
         if (pTask!=nullptr)
         {
             pTask->Run();
-            pTask->isFinished = true;
         }
 
         if (PoolData->pDestroyAll && PoolData->pTaskList.empty())
@@ -87,7 +86,7 @@ bool validate_score(const std::vector<Data>& array) {
 class BlockSort : public Task
 {
 public:
-    bool done;
+    bool done=false;
     //实现Task中的virtual函数
     void Run()
     {
@@ -105,7 +104,7 @@ public:
 
 class MergeTask : public Task {
 public:
-    bool done;
+    bool done=false;
     // 实现 Task 中的虚函数 Run
     void Run() override {
         std::vector<Data>* dataVec = static_cast<std::vector<Data>*>(pData);
@@ -130,7 +129,7 @@ int main(int argc, char *argv[]){
         std::cout << "Array size must be a positive integer" << std::endl;
         return 1;
     }
-
+    auto data_init_start_time = std::chrono::high_resolution_clock::now();
     std::vector<Data> array(array_size);
     // Initialize data
     srand(time(NULL)); // Seed the random number generator
@@ -150,13 +149,13 @@ int main(int argc, char *argv[]){
         array[i].rating = static_cast<float>(rand()) / RAND_MAX * 5.0f; // Random rating between 0 and 5
         array[i].score = static_cast<float>(rand()) / RAND_MAX * 11000000.0f - 1000000.0f; // Random score between -1000000 and 10000000
     }
-
-    auto start_time = std::chrono::high_resolution_clock::now();
+    auto data_init_end_time = std::chrono::high_resolution_clock::now();
+    auto sort_start_time = std::chrono::high_resolution_clock::now();
 
     Pool* pool = new Pool(num_thread);
     int num_block = num_thread;
 
-    BlockSort* pTaskList  = new BlockSort[num_block];
+    BlockSort* BlockSortList  = new BlockSort[num_block];
     uint64_t block_size = array_size / num_block;
 
     std::vector<uint64_t> ranges(num_block+1);
@@ -169,9 +168,9 @@ int main(int argc, char *argv[]){
         //添加归并的边界
         ranges[index+1] = end_index;
         // 为当前任务设置数据
-        pTaskList[index].setData(&array,start_index,0,end_index);
+        BlockSortList[index].setData(&array,start_index,0,end_index);
         // 将当前任务添加到线程池
-        pool->AddTask(&pTaskList[index]);
+        pool->AddTask(&BlockSortList[index]);
     }
 
 
@@ -179,7 +178,8 @@ int main(int argc, char *argv[]){
     while(true){
         bool flag = true;
         for(int i=0;i<num_block;i++){
-             if ( !pTaskList[i].done ){
+             if ( !BlockSortList[i].done )
+             {
                 flag = false;
              }          
         }
@@ -214,14 +214,21 @@ int main(int argc, char *argv[]){
     // 激活析构
     // delete pool;
     // delete []pTaskList;
+    auto sort_end_time = std::chrono::high_resolution_clock::now();
 
-    // End timer
-    auto end_time = std::chrono::high_resolution_clock::now();
+    auto exchange_start_time = std::chrono::high_resolution_clock::now();
+////////////////////////////////////////////////////////////////
+//根据指针顺序取出和换入
+////////////////////////////////////////////////////////////////
+    auto exchange_end_time = std::chrono::high_resolution_clock::now();
 
-    double time_spent = std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count();
-
+    double sort_time_spent = std::chrono::duration_cast<std::chrono::duration<double>>(sort_end_time - sort_start_time).count();
+    double data_init_time_spent = std::chrono::duration_cast<std::chrono::duration<double>>(data_init_end_time - data_init_start_time).count();
+    double exchange_time_spent = std::chrono::duration_cast<std::chrono::duration<double>>(exchange_end_time - exchange_start_time).count();
     // Print time taken
-    std::cout << "Time taken: " << time_spent << " seconds" << std::endl;
+    std::cout << "[SORT] Time taken: " << sort_time_spent << " seconds" << std::endl;
+    std::cout << "[DATA INIT] Time taken: " << data_init_time_spent << " seconds" << std::endl;
+    std::cout << "[EXCHANGE] Time taken: " << exchange_time_spent << " seconds" << std::endl;
     if (validate_score(array))
         std::cout << "Validation: Array is sorted correctly by score" << std::endl;
     else
