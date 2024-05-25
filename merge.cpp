@@ -14,10 +14,9 @@ Pool::Pool(int threadNum)
     CreateAll(threadNum);
 }
 
-//析构
 Pool::~Pool()
 {
-    printf("Delete Pool\n");
+    //printf("Delete Pool\n");
     DestroyAll();
 }
 
@@ -25,7 +24,7 @@ Pool::~Pool()
 void* Pool::ThreadFunc(void *threadData)
 {
     if ( threadData == nullptr ) {
-        printf("Thread data is null.");
+        //printf("Thread data is null.");
         return NULL;
     }
     //将'threadData'指针铸造为Pool指针'PoolData',以便使用Pool中的方法
@@ -96,14 +95,6 @@ void Pool::AddTask(Task* task)
     //<?1>:这里unlock和signal的顺序可以颠倒吗?
 }
 
-int Pool::GetTaskSize(){
-    pthread_mutex_lock(&pMutex);
-    int taskSize = pTaskList.size();
-    pthread_cond_signal(&pCond);
-    pthread_mutex_unlock(&pMutex);
-    return taskSize;
-}
-
 
 void Pool::DestroyAll()
 {
@@ -161,17 +152,6 @@ bool validate_score(const std::vector<Data>& array) {
     }
     return true; // Array is sorted correctly
 }
-
-// void waitAllTasks(const std::vector<Task>& vec){
-//     while (true)
-//     {
-//         if(pool->GetTaskSize() == 0){
-//             break;
-//         }else{
-//             continue;
-//         }
-//     } 
-// }
 
 class BlockSort : public Task
 {
@@ -309,23 +289,6 @@ int main(int argc, char *argv[]){
 
     // Print time taken
     std::cout << "Time taken: " << time_spent << " seconds" << std::endl;
-    // std::vector<Data> array2(1000000);
-
-
-    // for(int j=0;j<10;j++){
-    //        // 用初始值填充前1000个元素
-    //     for (size_t i = 0; i < 1000000; ++i) {
-    //     array2[i] = array[1000000*j+i]; // 假设Data的构造函数可以接受int值
-    //     }
-    //     if(validate_score(array2))
-    //         std::cout << "Validation: Array is sorted correctly by score" << std::endl;
-    //     else
-    //         std::cout << "Validation: Array is not sorted correctly by score" << std::endl;      
-        
-    // }
-
- 
-
     if (validate_score(array))
         std::cout << "Validation: Array is sorted correctly by score" << std::endl;
     else

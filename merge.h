@@ -43,18 +43,6 @@ public:
         start_index = start;
         middle_index = mid;
     }
-    //内联函数,提供阻塞线程的方法
-    inline int waitTask()
-    {
-        if (!isFinished)
-        {
-            while (!isFinished)
-            {
-                sleep(5);
-            }
-        }
-        return 0;
-    }
 };
 
 
@@ -85,5 +73,4 @@ public:
     Pool(int threadNum);
     virtual ~Pool();
     void AddTask(Task* t);
-    int GetTaskSize();
 };
