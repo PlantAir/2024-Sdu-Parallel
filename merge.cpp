@@ -93,8 +93,6 @@ public:
     {
         //***********************************************************需要填补的第一个位置,如何操作自己的pData***********************************************************
         //pData是继承自Task的protected属性,通过setData直接设置
-        //示例:
-        // std::sort(pData->?,pData->?, compare_func);
         if (pData != nullptr) {
             std::vector<Data>* dataVec = static_cast<std::vector<Data>*>(pData);
             std::sort(dataVec->begin()+start_index, dataVec->begin()+end_index, compare_score);
@@ -121,18 +119,20 @@ public:
 
 int main(int argc, char *argv[]){
 
-    if (argc != 2) {
-        std::cout << "Usage: " << argv[0] << " <array_size>" << std::endl;
+    if (argc != 3) {
+        std::cout << "Usage: " << argv[0] << " <array_size>" <<" <thread_num>"<< std::endl;
         return 1;
     }
-    uint64_t array_size = std::strtoull(argv[1], nullptr, 10);
+    uint64_t array_size = std::strtoull(argv[1],nullptr,10);
+    uint64_t num_thread = std::strtoull(argv[2],nullptr,10);
+
     if (array_size == 0) {
         std::cout << "Array size must be a positive integer" << std::endl;
         return 1;
     }
 
     std::vector<Data> array(array_size);
-        // Initialize data
+    // Initialize data
     srand(time(NULL)); // Seed the random number generator
     for (uint64_t i = 0; i < array_size; i++) {
         array[i].id = i + 1;
@@ -152,31 +152,33 @@ int main(int argc, char *argv[]){
     }
 
     auto start_time = std::chrono::high_resolution_clock::now();
-    int num_thread = 8;
-    int num_tasks = 8;
-    std::vector<uint64_t> ranges(num_tasks+1);
-    ranges[0] = 0;
+
     Pool* pool = new Pool(num_thread);
-    BlockSort* pTaskList  = new BlockSort[num_tasks];
-    // 计算每个块的大小
-    uint64_t block_size = array_size / num_tasks;
+    int num_block = num_thread;
+
+    BlockSort* pTaskList  = new BlockSort[num_block];
+    uint64_t block_size = array_size / num_block;
+
+    std::vector<uint64_t> ranges(num_block+1);
+    ranges[0] = 0;
     // 为每个任务分配数据
-    for (int index = 0; index < num_tasks; ++index) {
+    for (int index = 0; index < num_block; ++index) {
         // 计算当前任务应该处理的数据的起始索引和结束索引
         uint64_t start_index = index * block_size;
-        uint64_t end_index = (index == num_tasks-1) ? array_size : (start_index + block_size);
+        uint64_t end_index = (index == num_block-1) ? array_size : (start_index + block_size);
         //添加归并的边界
         ranges[index+1] = end_index;
         // 为当前任务设置数据
         pTaskList[index].setData(&array,start_index,0,end_index);
-
         // 将当前任务添加到线程池
         pool->AddTask(&pTaskList[index]);
     }
+
+
     //简单轮询所有线程是否已经完成,显然可以优化
     while(true){
         bool flag = true;
-        for(int i=0;i<num_tasks;i++){
+        for(int i=0;i<num_block;i++){
              if ( !pTaskList[i].done ){
                 flag = false;
              }          
