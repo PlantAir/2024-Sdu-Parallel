@@ -1,4 +1,4 @@
-#include "pool.h"
+#include "merge.h"
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -162,16 +162,16 @@ bool validate_score(const std::vector<Data>& array) {
     return true; // Array is sorted correctly
 }
 
-void waitAllTasks(Pool* pool){
-    while (true)
-    {
-        if(pool->GetTaskSize() == 0){
-            break;
-        }else{
-            continue;
-        }
-    } 
-}
+// void waitAllTasks(const std::vector<Task>& vec){
+//     while (true)
+//     {
+//         if(pool->GetTaskSize() == 0){
+//             break;
+//         }else{
+//             continue;
+//         }
+//     } 
+// }
 
 class BlockSort : public Task
 {
@@ -242,7 +242,7 @@ int main(int argc, char *argv[]){
 
     auto start_time = std::chrono::high_resolution_clock::now();
     int num_thread = 8;
-    int num_tasks = 1000;
+    int num_tasks = 8;
     std::vector<uint64_t> ranges(num_tasks+1);
     ranges[0] = 0;
     Pool* pool = new Pool(num_thread);
@@ -263,33 +263,40 @@ int main(int argc, char *argv[]){
         pool->AddTask(&pTaskList[index]);
     }
     //简单轮询所有线程是否已经完成,显然可以优化
-    waitAllTasks(pool);
+    while(true){
+        bool flag = true;
+        for(int i=0;i<num_tasks;i++){
+             if ( !pTaskList[i].done ){
+                flag = false;
+             }          
+        }
+        if(flag){
+            break;
+        }
+    }
     while(ranges.size()>2){
         uint64_t num_merge = (ranges.size()-1)/2;
-        std::cout<<endl<<num_merge<<endl;
         MergeTask* mergeList = new MergeTask[num_merge];
-        std::cout<<endl<<"-------------------------------------"<<endl;
         
         for (int index = 0; index < num_merge; ++index) {  
             // 为当前任务设置数据
-            // std::cout<<ranges[index]<<" "<<ranges[index+1]<<" "<<ranges[index+2]<<endl;
             mergeList[index].setData(&array,ranges[index],ranges[index+1],ranges[index+2]);
-            // for(int i =0;i<ranges.size();i++){
-            //         std::cout<<ranges[i]<<"  ";
-            //     }
-                // std::cout<<endl<<"-------------------------------------"<<endl;
-            ranges.erase(ranges.begin()+index+1);
-                
+            ranges.erase(ranges.begin()+index+1);                
           // 将当前任务添加到线程池
             pool->AddTask(&mergeList[index]);
         }
-        // for(int i =0;i<ranges.size();i++){
-        //             std::cout<<ranges[i]<<"  ";
-        //         }
-                // std::cout<<endl<<"-------------------------------------"<<endl;
-        waitAllTasks(pool);
+         while(true){
+            bool flag = true;
+            for(int i=0;i<num_merge;i++){
+                if ( !mergeList[i].done ){
+                    flag = false;
+                }          
+            }
+            if(flag){
+                break;
+            }
+        }
     }
-    waitAllTasks(pool);
    
     // //激活析构
     // delete pool;
