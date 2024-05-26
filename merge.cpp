@@ -17,7 +17,7 @@ Pool::Pool(int threadNum)
 //析构
 Pool::~Pool()
 {
-    printf("Delete Pool\n");
+    //printf("Delete Pool\n");
     DestroyAll();
 }
 
@@ -25,7 +25,7 @@ Pool::~Pool()
 void* Pool::ThreadFunc(void *threadData)
 {
     if ( threadData == nullptr ) {
-        printf("Thread data is null.");
+        //printf("Thread data is null.");
         return NULL;
     }
     //将'threadData'指针铸造为Pool指针'PoolData',以便使用Pool中的方法
@@ -77,7 +77,7 @@ void Pool::CreateAll(int num)
     for (int i=0;i<num;++i)
     {
         pthread_create(&pTid[i],NULL,ThreadFunc,(void *)this);
-        printf("%d start",i);
+        //printf("%d start",i);
     }
 }
 
@@ -111,7 +111,7 @@ void Pool::DestroyAll()
     {
         //设置线程销毁标志,由销毁标志触发pthread_exit,退出线程
         pDestroyAll = true;
-        printf("start to destroy");
+        //printf("start to destroy");
 
         //唤醒所有线程,此时由于触发pDestroy=true条件的判断会依次自动销毁.
         pthread_cond_broadcast(&pCond);
@@ -121,7 +121,7 @@ void Pool::DestroyAll()
         {
             //pthread_join是以阻塞的方式等待指定线程结束.
             pthread_join(pTid[i],NULL);
-            printf("Destroy thread %d",i);
+            //printf("Destroy thread %d",i);
         }
         pTid.clear();
         pthread_cond_destroy(&pCond);
@@ -162,16 +162,6 @@ bool validate_score(const std::vector<Data>& array) {
     return true; // Array is sorted correctly
 }
 
-// void waitAllTasks(const std::vector<Task>& vec){
-//     while (true)
-//     {
-//         if(pool->GetTaskSize() == 0){
-//             break;
-//         }else{
-//             continue;
-//         }
-//     } 
-// }
 
 class BlockSort : public Task
 {
@@ -325,8 +315,8 @@ public:
     void Run() override {
         std::vector<Data>* dataVec = static_cast<std::vector<Data>*>(pData);
         //merge(* dataVec,start_index,middle_index,end_index);
-        //std::inplace_merge(dataVec->begin() + start_index,dataVec->begin() + middle_index,dataVec->begin() + end_index,compare_score);
-        manual_merge(*dataVec, start_index, middle_index, end_index);
+        std::inplace_merge(dataVec->begin() + start_index,dataVec->begin() + middle_index,dataVec->begin() + end_index,compare_score);
+        //manual_merge(*dataVec, start_index, middle_index, end_index);
         //inplaceMerge(*dataVec, start_index, middle_index, end_index, compare_score);
 
 
@@ -336,16 +326,19 @@ public:
 
 int main(int argc, char *argv[]){
 
-    if (argc != 2) {
-        std::cout << "Usage: " << argv[0] << " <array_size>" << std::endl;
+    if (argc != 3) {
+        std::cout << "Usage: " << argv[0] << " <array_size> <thread_num>" << std::endl;
         return 1;
     }
     uint64_t array_size = std::strtoull(argv[1], nullptr, 10);
+    uint64_t thread_num = std::strtoull(argv[2], nullptr, 10);
     if (array_size == 0) {
         std::cout << "Array size must be a positive integer" << std::endl;
         return 1;
     }
     //int num = std::strtoull(argv[2], nullptr, 10);
+   
+    auto data_init_start_time = std::chrono::high_resolution_clock::now();
     std::vector<Data> array(array_size);
     std::vector<Data> arraystd(array_size);
         // Initialize data
@@ -366,10 +359,13 @@ int main(int argc, char *argv[]){
         array[i].rating = static_cast<float>(rand()) / RAND_MAX * 5.0f; // Random rating between 0 and 5
         array[i].score = static_cast<float>(rand()) / RAND_MAX * 11000000.0f - 1000000.0f; // Random score between -1000000 and 10000000
     }
+    auto data_init_end_time = std::chrono::high_resolution_clock::now();
     std::copy(array.begin(), array.end(), arraystd.begin());
+
+
     auto start_time = std::chrono::high_resolution_clock::now();
-    int num_thread = 15;
-    int num_tasks = 15;
+    int num_thread = thread_num;
+    int num_tasks = thread_num;
     std::vector<uint64_t> ranges(num_tasks+1);
     ranges[0] = 0;
     Pool* pool = new Pool(num_thread);
@@ -377,6 +373,8 @@ int main(int argc, char *argv[]){
     // 计算每个块的大小
     uint64_t block_size = array_size / num_tasks;
     // 为每个任务分配数据
+
+    auto blocktask_assign_start_time = std::chrono::high_resolution_clock::now();
     for (int index = 0; index < num_tasks; ++index) {
         // 计算当前任务应该处理的数据的起始索引和结束索引
         uint64_t start_index = index * block_size;
@@ -389,6 +387,11 @@ int main(int argc, char *argv[]){
         // 将当前任务添加到线程池
         pool->AddTask(&pTaskList[index]);
     }
+    auto blocktask_assign_end_time = std::chrono::high_resolution_clock::now();
+    
+
+    auto blocksort_start_time = std::chrono::high_resolution_clock::now();
+    
     //简单轮询所有线程是否已经完成,显然可以优化
     while(true){
         bool flag = true;
@@ -401,6 +404,11 @@ int main(int argc, char *argv[]){
             break;
         }
     }
+    auto blocksort_end_time = std::chrono::high_resolution_clock::now();
+
+    auto merge_start_time = std::chrono::high_resolution_clock::now();
+
+    
     while(ranges.size()>2){
         uint64_t num_merge = (ranges.size()-1)/2;
         MergeTask* mergeList = new MergeTask[num_merge];
@@ -424,6 +432,7 @@ int main(int argc, char *argv[]){
             }
         }
     }
+    auto merge_end_time = std::chrono::high_resolution_clock::now();
    
     // //激活析构
     // delete pool;
@@ -433,24 +442,17 @@ int main(int argc, char *argv[]){
     auto end_time = std::chrono::high_resolution_clock::now();
 
     double time_spent = std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count();
-
+    double merge_spent = std::chrono::duration_cast<std::chrono::duration<double>>(merge_end_time - merge_start_time).count();
+    double blocksort_spent = std::chrono::duration_cast<std::chrono::duration<double>>(blocksort_end_time - blocksort_start_time).count();
+    double blocktaskassign_spent = std::chrono::duration_cast<std::chrono::duration<double>>(blocktask_assign_end_time - blocktask_assign_start_time).count();
     // Print time taken
-    std::cout << "Time taken: " << time_spent << " seconds" << std::endl;
+    std::cout << "[Our SORT] Time taken: " << time_spent << " seconds" << std::endl;
+    std::cout << "[blocktask-assign] Time taken: " << blocktaskassign_spent << " seconds" << std::endl;
+    std::cout << "[blocksort] Time taken: " << blocksort_spent << " seconds" << std::endl;
+    std::cout << "[merge] Time taken: " << merge_spent << " seconds" << std::endl;
+
+
     // std::vector<Data> array2(1000000);
-
-
-    // for(int j=0;j<10;j++){
-    //        // 用初始值填充前1000个元素
-    //     for (size_t i = 0; i < 1000000; ++i) {
-    //     array2[i] = array[1000000*j+i]; // 假设Data的构造函数可以接受int值
-    //     }
-    //     if(validate_score(array2))
-    //         std::cout << "Validation: Array is sorted correctly by score" << std::endl;
-    //     else
-    //         std::cout << "Validation: Array is not sorted correctly by score" << std::endl;      
-        
-    // }
-
  
 
     if (validate_score(array))
@@ -461,8 +463,10 @@ int main(int argc, char *argv[]){
     auto start_time_std = std::chrono::high_resolution_clock::now();
     std::sort(arraystd.begin(), arraystd.end(), compare_score);
     auto end_time_std = std::chrono::high_resolution_clock::now();
+
     double time_spent_std = std::chrono::duration_cast<std::chrono::duration<double>>(end_time_std - start_time_std).count();
-    std::cout << "std Time taken: " << time_spent_std << " seconds" << std::endl;
+    
+    std::cout << "[std::SORT] Time taken: " << time_spent_std << " seconds" << std::endl;
 
     // Validate if the array is sorted correctly by score
     
