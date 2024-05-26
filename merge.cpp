@@ -152,7 +152,14 @@ struct Data {
 bool compare_score(const Data& a, const Data& b) {
     return a.score < b.score;
 }
-
+// Validation function to check if the array is sorted correctly by score
+bool validate_score_pin(const std::vector<Data*>& array) {
+    for (size_t i = 1; i < array.size(); i++) {
+        if (array[i]->score < array[i - 1]->score)
+            return false; // Array is not sorted correctly
+    }
+    return true; // Array is sorted correctly
+}
 // Validation function to check if the array is sorted correctly by score
 bool validate_score(const std::vector<Data>& array) {
     for (size_t i = 1; i < array.size(); i++) {
@@ -169,12 +176,12 @@ public:
     bool done;
     //实现Task中的virtual函数
 
-    int partition(std::vector<Data>& vec, int low, int high) {
-        Data pivot = vec[high]; // 选择最后一个元素作为枢轴
+    int partition(std::vector<Data*>& vec, int low, int high) {
+        Data* pivot = vec[high]; // 选择最后一个元素作为枢轴
         int i = low - 1; // i是小于枢轴的元素的最后一个索引
 
         for (int j = low; j < high; ++j) {
-            if (vec[j].score < pivot.score) {
+            if (vec[j]->score < pivot->score) {
                 ++i;
                 std::swap(vec[i], vec[j]);
             }
@@ -183,53 +190,53 @@ public:
         return i + 1;
     }
 
-    void quickSort(std::vector<Data>& vec, int low, int high) {
+    void quickSort(std::vector<Data*>& vec, int low, int high) {
         if (low < high) {
             int pi = partition(vec, low, high);
             quickSort(vec, low, pi - 1);
             quickSort(vec, pi + 1, high);
         }
     }
-    void merge(std::vector<Data>& vec, int start, int mid, int end) {
-        int n1 = mid - start + 1;
-        int n2 = end - mid;
+    // void merge(std::vector<Data>& vec, int start, int mid, int end) {
+    //     int n1 = mid - start + 1;
+    //     int n2 = end - mid;
 
-        std::vector<Data> left(vec.begin() + start, vec.begin() + mid + 1);
-        std::vector<Data> right(vec.begin() + mid + 1, vec.begin() + end + 1);
+    //     std::vector<Data> left(vec.begin() + start, vec.begin() + mid + 1);
+    //     std::vector<Data> right(vec.begin() + mid + 1, vec.begin() + end + 1);
 
-        int i = 0, j = 0, k = start;
-        while (i < n1 && j < n2) {
-            if (left[i].score < right[j].score) {
-                vec[k] = left[i];
-                i++;
-            } else {
-                vec[k] = right[j];
-                j++;
-            }
-            k++;
-        }
+    //     int i = 0, j = 0, k = start;
+    //     while (i < n1 && j < n2) {
+    //         if (left[i].score < right[j].score) {
+    //             vec[k] = left[i];
+    //             i++;
+    //         } else {
+    //             vec[k] = right[j];
+    //             j++;
+    //         }
+    //         k++;
+    //     }
 
-        while (i < n1) {
-            vec[k] = left[i];
-            i++;
-            k++;
-        }
+    //     while (i < n1) {
+    //         vec[k] = left[i];
+    //         i++;
+    //         k++;
+    //     }
 
-        while (j < n2) {
-            vec[k] = right[j];
-            j++;
-            k++;
-        }
-    }
+    //     while (j < n2) {
+    //         vec[k] = right[j];
+    //         j++;
+    //         k++;
+    //     }
+    // }
 
-    void mergeSort(std::vector<Data>& vec, int start, int end) {
-        if (start < end) {
-            int mid = start + (end - start) / 2;
-            mergeSort(vec, start, mid);
-            mergeSort(vec, mid + 1, end);
-            merge(vec, start, mid, end);
-        }
-    }
+    // void mergeSort(std::vector<Data>& vec, int start, int end) {
+    //     if (start < end) {
+    //         int mid = start + (end - start) / 2;
+    //         mergeSort(vec, start, mid);
+    //         mergeSort(vec, mid + 1, end);
+    //         merge(vec, start, mid, end);
+    //     }
+    // }
     void Run()
     {
         //***********************************************************需要填补的第一个位置,如何操作自己的pData***********************************************************
@@ -237,7 +244,8 @@ public:
         //示例:
         // std::sort(pData->?,pData->?, compare_func);
         if (pData != nullptr) {
-            std::vector<Data>* dataVec = static_cast<std::vector<Data>*>(pData);
+            std::vector<Data*>* dataVec = reinterpret_cast<std::vector<Data*>*>(pData);
+            //std::vector<Data*>* dataVec = static_cast<std::vector<Data*>*>(pData);
             quickSort(*dataVec,start_index,end_index-1);
             //mergeSort(*dataVec,start_index,end_index-1);
             //std::sort(dataVec->begin()+start_index, dataVec->begin()+end_index, compare_score);
@@ -254,15 +262,15 @@ public:
     // 实现 Task 中的虚函数 Run
     
 
-    void manual_merge(std::vector<Data>& data, int start, int mid, int end) {
+    void manual_merge(std::vector<Data*>& data, int start, int mid, int end) {
     if (start >= mid || mid >= end) return; // 边界条件检查
 
     int left_size = mid - start;
     int right_size = end - mid;
 
     // 创建临时数组来保存左区间和右区间的元素
-    std::vector<Data> left(data.begin() + start, data.begin() + mid);
-    std::vector<Data> right(data.begin() + mid, data.begin() + end);
+    std::vector<Data*> left(data.begin() + start, data.begin() + mid);
+    std::vector<Data*> right(data.begin() + mid, data.begin() + end);
 
     int left_index = 0;
     int right_index = 0;
@@ -270,7 +278,7 @@ public:
 
     // 合并两个有序区间
     while (left_index < left_size && right_index < right_size) {
-        if (right[right_index].score<left[left_index].score) {
+        if (right[right_index]->score<left[left_index]->score) {
             data[merge_index] = std::move(right[right_index]);
             ++right_index;
         } else {
@@ -313,10 +321,11 @@ public:
         }
     }
     void Run() override {
-        std::vector<Data>* dataVec = static_cast<std::vector<Data>*>(pData);
+        std::vector<Data*>* dataVec = reinterpret_cast<std::vector<Data*>*>(pData); // 修改为 reinterpret_cast
+        //std::vector<Data*>* dataVec = static_cast<std::vector<Data*>*>(pData);
         //merge(* dataVec,start_index,middle_index,end_index);
-        std::inplace_merge(dataVec->begin() + start_index,dataVec->begin() + middle_index,dataVec->begin() + end_index,compare_score);
-        //manual_merge(*dataVec, start_index, middle_index, end_index);
+        //std::inplace_merge(dataVec->begin() + start_index,dataVec->begin() + middle_index,dataVec->begin() + end_index,compare_score);
+        manual_merge(*dataVec, start_index, middle_index, end_index);
         //inplaceMerge(*dataVec, start_index, middle_index, end_index, compare_score);
 
 
@@ -364,6 +373,13 @@ int main(int argc, char *argv[]){
 
 
     auto start_time = std::chrono::high_resolution_clock::now();
+    // printf("@ss");
+    std::vector<Data*> ptrArray(array_size);
+    //printf("@ss");
+    for(int i = 0; i < array_size; i++) {
+        ptrArray[i] = &array[i];
+    }
+    // printf("@ss");
     int num_thread = thread_num;
     int num_tasks = thread_num;
     std::vector<uint64_t> ranges(num_tasks+1);
@@ -382,7 +398,7 @@ int main(int argc, char *argv[]){
         //添加归并的边界
         ranges[index+1] = end_index;
         // 为当前任务设置数据
-        pTaskList[index].setData(&array,start_index,0,end_index);
+        pTaskList[index].setData(reinterpret_cast<void**>(&ptrArray),start_index,0,end_index);
 
         // 将当前任务添加到线程池
         pool->AddTask(&pTaskList[index]);
@@ -415,7 +431,7 @@ int main(int argc, char *argv[]){
         
         for (int index = 0; index < num_merge; ++index) {  
             // 为当前任务设置数据
-            mergeList[index].setData(&array,ranges[index],ranges[index+1],ranges[index+2]);
+            mergeList[index].setData(reinterpret_cast<void**>(&ptrArray),ranges[index],ranges[index+1],ranges[index+2]);
             ranges.erase(ranges.begin()+index+1);                
           // 将当前任务添加到线程池
             pool->AddTask(&mergeList[index]);
@@ -455,26 +471,26 @@ int main(int argc, char *argv[]){
     // std::vector<Data> array2(1000000);
  
 
-    if (validate_score(array))
+    if (validate_score_pin(ptrArray))
         std::cout << "Validation: Array is sorted correctly by score" << std::endl;
     else
         std::cout << "Validation: Array is not sorted correctly by score" << std::endl;
 
-    auto start_time_std = std::chrono::high_resolution_clock::now();
-    std::sort(arraystd.begin(), arraystd.end(), compare_score);
-    auto end_time_std = std::chrono::high_resolution_clock::now();
+    // auto start_time_std = std::chrono::high_resolution_clock::now();
+    // std::sort(arraystd.begin(), arraystd.end(), compare_score);
+    // auto end_time_std = std::chrono::high_resolution_clock::now();
 
-    double time_spent_std = std::chrono::duration_cast<std::chrono::duration<double>>(end_time_std - start_time_std).count();
+    // double time_spent_std = std::chrono::duration_cast<std::chrono::duration<double>>(end_time_std - start_time_std).count();
     
-    std::cout << "[std::SORT] Time taken: " << time_spent_std << " seconds" << std::endl;
+    // std::cout << "[std::SORT] Time taken: " << time_spent_std << " seconds" << std::endl;
 
-    // Validate if the array is sorted correctly by score
+    // // Validate if the array is sorted correctly by score
     
-     // Clean up
-    if (validate_score(arraystd))
-        std::cout << "Validation: Arraystd is sorted correctly by score" << std::endl;
-    else
-        std::cout << "Validation: Arraystd is not sorted correctly by score" << std::endl;
+    //  // Clean up
+    // if (validate_score(arraystd))
+    //     std::cout << "Validation: Arraystd is sorted correctly by score" << std::endl;
+    // else
+    //     std::cout << "Validation: Arraystd is not sorted correctly by score" << std::endl;
     return 1;
 }
 

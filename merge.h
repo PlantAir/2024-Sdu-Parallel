@@ -15,7 +15,7 @@ private:
 
 protected:
     //pData代表Task内部受操作的Data.在本例中是切割后的待排序defined struct块
-    void* pData;
+    void** pData;
     uint64_t end_index,start_index,middle_index;
     //内联函数,调用时直接展开为定义内容(即"isFinished=false这两句")
     inline void initTask()
@@ -36,7 +36,7 @@ public:
     //必须实现的Run()函数,代表该Task的操作内容
     virtual void Run() = 0;
     //内联函数,设置pData
-    inline void setData(void* data,uint64_t start,uint64_t mid,uint64_t end)
+    inline void setData(void** data,uint64_t start,uint64_t mid,uint64_t end)
     {
         pData = data;
         end_index = end;
