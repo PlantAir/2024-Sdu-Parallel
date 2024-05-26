@@ -136,10 +136,16 @@ public:
     {
         pthread_mutex_init(&pMem,NULL);
         DataBlockSize  = sizeof(std::vector<Data>) + arraysize*sizeof(Data);
-        mem = 2*DataBlockSize + 3*threadNum*sizeof(vector<Data>*); //MergePointerBlockSize=2*threadNum*sizeof(Data*);BlockSortPointerBlockSize = threadNum*sizeof(Data*);
+        mem = 2*DataBlockSize + 10*threadNum*sizeof(vector<Data>*); //MergePointerBlockSize=2*threadNum*sizeof(Data*);BlockSortPointerBlockSize = threadNum*sizeof(Data*);
         start = malloc(mem);
         now = start;
     };
+    vector<Data>& MemoryManager::getDataMem(uint64_t size);
+    vector<Data*>& MemoryManager::getDataPointerMem(uint64_t size);
+    BlockSort* MemoryManager::getBlockSortMem(int num);
+    MergeTask* MemoryManager::getMergeTaskMem(int num);
+    MoveTask* MemoryManager::getMoveTaskMem(int num);
+    RemoveTask* MemoryManager::getRemoveTaskMem(int num);
 
 
 

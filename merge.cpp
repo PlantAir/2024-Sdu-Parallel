@@ -374,14 +374,25 @@ public:
 };
 
 
-vector<Data>* MemoryManager::getDataMem(uint64_t size)
+vector<Data>& MemoryManager::getDataMem(uint64_t size)
 {
     pthread_mutex_lock(&pMem);   
     void* ind = now;
     useMemory(DataBlockSize);
     auto result = std::construct_at(static_cast<std::vector<Data>*>(ind), size);
     pthread_mutex_unlock(&pMem);   
-    return result;
+    return *result;
+};
+
+
+vector<Data*>& MemoryManager::getDataPointerMem(uint64_t size)
+{
+    pthread_mutex_lock(&pMem);   
+    void* ind = now;
+    useMemory(DataBlockSize);
+    auto result = std::construct_at(static_cast<std::vector<Data*>*>(ind), size);
+    pthread_mutex_unlock(&pMem);   
+    return *result;
 };
 
 BlockSort* MemoryManager::getBlockSortMem(int num)
@@ -441,10 +452,10 @@ int main(int argc, char *argv[]){
    
     auto data_init_start_time = std::chrono::high_resolution_clock::now();
 
-
+    MemoryManager memo(array_size,thread_num);
     //auto array_ptr = std::construct_at(static_cast<std::vector<Data>*>()), array_size)
-    //std::vector<Data>& array = *array_ptr;
-    std::vector<Data> array(array_size);
+    std::vector<Data>& array = memo.getDataMem(array_size);
+    //std::vector<Data> array(array_size);
     std::vector<Data> arraystd(array_size);
     srand(20); // Seed the random number generator
     for (uint64_t i = 0; i < array_size; i++) {
@@ -468,7 +479,12 @@ int main(int argc, char *argv[]){
     //print(array);
 
     auto start_time = std::chrono::high_resolution_clock::now();
+
+
+
+
     // printf("@ss");
+
     std::vector<Data*> ptrArray(array_size);
     //printf("@ss");
     for(int i = 0; i < array_size; i++) {
@@ -480,7 +496,7 @@ int main(int argc, char *argv[]){
     std::vector<uint64_t> ranges(num_tasks+1);
     ranges[0] = 0;
     Pool* pool = new Pool(num_thread);
-    BlockSort* pTaskList  = new BlockSort[num_tasks];
+    BlockSort* pTaskList  = memo.getBlockSortMem(num_tasks);
     // 计算每个块的大小
     uint64_t block_size = array_size / num_tasks;
     // 为每个任务分配数据
@@ -522,7 +538,7 @@ int main(int argc, char *argv[]){
     
     while(ranges.size()>2){
         uint64_t num_merge = (ranges.size()-1)/2;
-        MergeTask* mergeList = new MergeTask[num_merge];
+        MergeTask* mergeList=memo.getMergeTaskMem(num_merge);
         
         for (int index = 0; index < num_merge; ++index) {  
             // 为当前任务设置数据
@@ -545,10 +561,11 @@ int main(int argc, char *argv[]){
     }
     //printpin(ptrArray);
     auto merge_end_time = std::chrono::high_resolution_clock::now();
-    RemoveTask* rTaskList  = new RemoveTask[num_tasks];
+    RemoveTask* rTaskList  =memo.getRemoveTaskMem(num_tasks);
     // 计算每个块的大小
     block_size = array_size / num_tasks;
     // 为每个任务分配数据
+    sortedArray = memo.getDataMem(array_size);
     std::vector<Data> sortedArray(array_size);
     for (int index = 0; index < num_tasks; ++index) {
         // 计算当前任务应该处理的数据的起始索引和结束索引
@@ -573,7 +590,7 @@ int main(int argc, char *argv[]){
             break;
         }
     }
-    MoveTask* mTaskList  = new MoveTask[num_tasks];
+    MoveTask* mTaskList =memo.getMoveTaskMem(num_tasks);
     // 计算每个块的大小
     block_size = array_size / num_tasks;
     // 为每个任务分配数据
