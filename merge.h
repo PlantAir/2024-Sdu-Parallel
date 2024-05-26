@@ -6,6 +6,23 @@
 using std::list;
 using std::vector;
 
+struct Data {
+    int id;
+    int age;
+    float weight;
+    float height;
+    std::string name;
+    std::string address;
+    std::string email;
+    std::string phone;
+    std::string city;
+    std::string country;
+    int salary;
+    int years_of_experience;
+    bool employed;
+    float rating;
+    float score;
+};
 
 class Task
 {
@@ -97,3 +114,36 @@ public:
     void AddTask(Task* t);
     int GetTaskSize();
 };
+
+class MemoryManager
+{
+private:
+    pthread_mutex_t pMem;
+    void* start;
+    void* now;
+    void* finish;
+    uint64_t DataBlockSize = 0;
+
+
+    
+    useMemory(uint64_t mem_used)
+    {
+        now += mem_used;                 
+    };
+
+public:
+    MemoryManager(uint64_t arraysize, uint64_t threadNum)
+    {
+        pthread_mutex_init(&pMem,NULL);
+        DataBlockSize  = sizeof(std::vector<Data>) + arraysize*sizeof(Data);
+        mem = 2*DataBlockSize + 3*threadNum*sizeof(vector<Data>*); //MergePointerBlockSize=2*threadNum*sizeof(Data*);BlockSortPointerBlockSize = threadNum*sizeof(Data*);
+        start = malloc(mem);
+        now = start;
+    };
+
+
+
+
+
+    ~MemoryManager(){};
+}

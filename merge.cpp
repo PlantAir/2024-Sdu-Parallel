@@ -130,24 +130,6 @@ void Pool::DestroyAll()
 }
 
 
-struct Data {
-    int id;
-    int age;
-    float weight;
-    float height;
-    std::string name;
-    std::string address;
-    std::string email;
-    std::string phone;
-    std::string city;
-    std::string country;
-    int salary;
-    int years_of_experience;
-    bool employed;
-    float rating;
-    float score;
-};
-
 // Compare function for std::sort by score
 bool compare_score(const Data& a, const Data& b) {
     return a.score < b.score;
@@ -391,6 +373,58 @@ public:
     }
 };
 
+
+vector<Data>* MemoryManager::getDataMem(uint64_t size)
+{
+    pthread_mutex_lock(&pMem);   
+    void* ind = now;
+    useMemory(DataBlockSize);
+    auto result = std::construct_at(static_cast<std::vector<Data>*>(ind), size);
+    pthread_mutex_unlock(&pMem);   
+    return result;
+};
+
+BlockSort* MemoryManager::getBlockSortMem(int num)
+{
+    pthread_mutex_lock(&pMem);   
+    void* ind=now;
+    useMemory(num*sizeof(BlockSort));
+    auto result = std::construct_at(static_cast<BlockSort*>(ind),num)
+    pthread_mutex_unlock(&pMem);
+    return result;   
+};
+
+MergeTask* MemoryManager::getMergeTaskMem(int num)
+{
+    pthread_mutex_lock(&pMem);   
+    void* ind=now;
+    auto result = std::construct_at(static_cast<MergeTask*>(ind), num);
+    pthread_mutex_unlock(&pMem);   
+    return result;
+};
+
+MoveTask* MemoryManager::getMoveTaskMem(int num)
+{
+    pthread_mutex_lock(&pMem);   
+    void* ind=now;
+    useMemory(num*sizeof(MoveTask));
+    auto result = std::construct_at(static_cast<MoveTask*>(ind), num);
+    pthread_mutex_unlock(&pMem);   
+    return result;
+};
+
+RemoveTask* MemoryManager::getRemoveTaskMem(int num)
+{
+    pthread_mutex_lock(&pMem);   
+    void* ind=now;
+    useMemory(num*sizeof(RemoveTask));
+    auto result = std::construct_at(static_cast<RemoveTask*>(ind), num);
+    pthread_mutex_unlock(&pMem);   
+    return result;
+};
+
+
+
 int main(int argc, char *argv[]){
 
     if (argc != 3) {
@@ -406,9 +440,12 @@ int main(int argc, char *argv[]){
     //int num = std::strtoull(argv[2], nullptr, 10);
    
     auto data_init_start_time = std::chrono::high_resolution_clock::now();
+
+
+    //auto array_ptr = std::construct_at(static_cast<std::vector<Data>*>()), array_size)
+    //std::vector<Data>& array = *array_ptr;
     std::vector<Data> array(array_size);
     std::vector<Data> arraystd(array_size);
-        // Initialize data
     srand(20); // Seed the random number generator
     for (uint64_t i = 0; i < array_size; i++) {
         array[i].id = i + 1;
