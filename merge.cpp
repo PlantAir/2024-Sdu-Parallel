@@ -373,66 +373,99 @@ public:
     }
 };
 
-
-vector<Data>& MemoryManager::getDataMem(uint64_t size)
+class MemoryManager
 {
-    pthread_mutex_lock(&pMem);   
-    void* ind = now;
-    useMemory(DataBlockSize);
-    auto result = std::construct_at(static_cast<std::vector<Data>*>(ind), size);
-    pthread_mutex_unlock(&pMem);   
-    return *result;
-};
+private:
+    pthread_mutex_t pMem;
+    void* start;
+    void* now;
+    void* finish;
+    uint64_t DataBlockSize = 0;
 
 
-vector<Data*>& MemoryManager::getDataPointerMem(uint64_t size)
-{
-    pthread_mutex_lock(&pMem);   
-    void* ind = now;
-    useMemory(DataBlockSize);
-    auto result = std::construct_at(static_cast<std::vector<Data*>*>(ind), size);
-    pthread_mutex_unlock(&pMem);   
-    return *result;
-};
+    
+    useMemory(uint64_t mem_used)
+    {   
+        now = static_cast<char*>(now) + mem_used;
+        if (now > finish) 
+        {throw std::bad_alloc(); }  
+    };
 
-BlockSort* MemoryManager::getBlockSortMem(int num)
-{
-    pthread_mutex_lock(&pMem);   
-    void* ind=now;
-    useMemory(num*sizeof(BlockSort));
-    auto result = std::construct_at(static_cast<BlockSort*>(ind),num)
-    pthread_mutex_unlock(&pMem);
-    return result;   
-};
+public:
+    MemoryManager(uint64_t arraysize, uint64_t threadNum)
+    {
+        pthread_mutex_init(&pMem,NULL);
+        DataBlockSize  = sizeof(std::vector<Data>) + arraysize*sizeof(Data);
+        mem = 2*DataBlockSize + 10*threadNum*sizeof(vector<Data>*); //MergePointerBlockSize=2*threadNum*sizeof(Data*);BlockSortPointerBlockSize = threadNum*sizeof(Data*);
+        start = malloc(mem);
+        if (!start) {
+            throw std::bad_alloc(); 
+        }
+        now = start;
+        finish = static_cast<char*>(start) + mem;
+    };
+    vector<Data>& getDataMem(uint64_t size)
+    {
+        pthread_mutex_lock(&pMem);   
+        void* ind = now;
+        void useMemory(DataBlockSize);
+        auto result = std::construct_at(static_cast<std::vector<Data>*>(ind), size);
+        pthread_mutex_unlock(&pMem);   
+        return *result;
+    };
+    vector<Data*>& getDataPointerMem(uint64_t size)
+    {
+        pthread_mutex_lock(&pMem);   
+        void* ind = now;
+        useMemory(DataBlockSize);
+        auto result = std::construct_at(static_cast<std::vector<Data*>*>(ind), size);
+        pthread_mutex_unlock(&pMem);   
+        return *result;
+    };
+    BlockSort* getBlockSortMem(int num)
+    {
+        pthread_mutex_lock(&pMem);   
+        void* ind=now;
+        useMemory(num*sizeof(BlockSort));
+        auto result = std::construct_at(static_cast<BlockSort*>(ind),num);
+        pthread_mutex_unlock(&pMem);
+        return result;   
+    };
+    MergeTask* getMergeTaskMem(int num)
+    {
+        pthread_mutex_lock(&pMem);   
+        void* ind=now;
+        auto result = std::construct_at(static_cast<MergeTask*>(ind), num);
+        pthread_mutex_unlock(&pMem);   
+        return result;
+    };
+    MoveTask* getMoveTaskMem(int num)
+    {
+        pthread_mutex_lock(&pMem);   
+        void* ind=now;
+        useMemory(num*sizeof(MoveTask));
+        auto result = std::construct_at(static_cast<MoveTask*>(ind), num);
+        pthread_mutex_unlock(&pMem);   
+        return result;
+    };
+    RemoveTask* getRemoveTaskMem(int num)
+    {
+        pthread_mutex_lock(&pMem);   
+        void* ind=now;
+        useMemory(num*sizeof(RemoveTask));
+        auto result = std::construct_at(static_cast<RemoveTask*>(ind), num);
+        pthread_mutex_unlock(&pMem);   
+        return result;
+    };
+    ~MemoryManager(){    
+        free(start);
+        pthread_mutex_destroy(&pMem);};
+}
 
-MergeTask* MemoryManager::getMergeTaskMem(int num)
-{
-    pthread_mutex_lock(&pMem);   
-    void* ind=now;
-    auto result = std::construct_at(static_cast<MergeTask*>(ind), num);
-    pthread_mutex_unlock(&pMem);   
-    return result;
-};
 
-MoveTask* MemoryManager::getMoveTaskMem(int num)
-{
-    pthread_mutex_lock(&pMem);   
-    void* ind=now;
-    useMemory(num*sizeof(MoveTask));
-    auto result = std::construct_at(static_cast<MoveTask*>(ind), num);
-    pthread_mutex_unlock(&pMem);   
-    return result;
-};
 
-RemoveTask* MemoryManager::getRemoveTaskMem(int num)
-{
-    pthread_mutex_lock(&pMem);   
-    void* ind=now;
-    useMemory(num*sizeof(RemoveTask));
-    auto result = std::construct_at(static_cast<RemoveTask*>(ind), num);
-    pthread_mutex_unlock(&pMem);   
-    return result;
-};
+
+
 
 
 
