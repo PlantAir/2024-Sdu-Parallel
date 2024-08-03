@@ -1,6 +1,6 @@
 # Parallel Experiment （2024-Spring）
 ### [Teacher:weiguo Liu & zekun Yin, RA:lifeng Yan]
-### [Team: kai Chen, runpei Miao, huiwu Chen]
+### [Team: C, M, C]
 
 
 ##### 【线程生命周期优化】
