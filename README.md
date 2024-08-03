@@ -1,13 +1,12 @@
 # Parallel Experiment （2024-Spring）
-### [Teacher:weiguo Liu & zekun Yin, RA:lifeng Yan]
+### [Class:weiguo Liu & zekun Yin, RA:lifeng Yan]
 ### [Team: C, M, C]
 
 
 ##### 【线程生命周期优化】
 0-1 任务视角的线程池
 使线程可复用，减小创建和销毁线程的开销
-[done] by kai chen
-
+[done] by k ch
 ##### 【内存优化】
 1-1 可以使用向量化打包cache block大小的数据切片
 [wait] 
@@ -38,4 +37,4 @@
 [ref]
 Ofast是编译器不考虑代码text大小和C++某些编译规范，只考虑性能的编译方式
 还可以使用Omax试试
-[done] by kai chen
+[done] by k ch
