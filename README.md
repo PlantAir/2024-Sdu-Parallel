@@ -1,4 +1,5 @@
 # Parallel Experiment （2024-Spring）
+# 山东大学并行计算课程实验 (2024年-春季学期)
 ### [Class:weiguo Liu & zekun Yin, RA:lifeng Yan]
 ### [Team: C, M, C]
 
